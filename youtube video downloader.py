@@ -62,6 +62,7 @@ def download():
                 else:
                     path = path
                 stream_360.download(path)
+                print("Download Finished !")
                 notify()
             elif video_quality == 2:
                 stream_480 = youtube_connect.streams.filter(res='480p').first()
@@ -72,6 +73,7 @@ def download():
                 else:
                     path = path
                 stream_480.download(path)
+                print("Download Finished !")
                 notify()
 
             elif video_quality == 3:
@@ -83,6 +85,7 @@ def download():
                 else:
                     path = path
                 stream_720.download(path)
+                print("Download Finished !")                
                 notify()
 
             elif video_quality == 4:
