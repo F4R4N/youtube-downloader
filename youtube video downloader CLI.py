@@ -1,86 +1,62 @@
 #!usr/bin/dev python
-from pytube import YouTube
-import os, sys
-from win10toast import ToastNotifier
-from pynotifier import Notification
 import argparse
+import sys
+from pathlib import Path
+from pynotifier import Notification
+from pytube import YouTube
+from pytube.cli import on_progress
+from win10toast import ToastNotifier
 
-# color table
-ENDC = '\033[0m'
-RED = '\033[91m'
-GREEN = '\033[92m'
-BLUE = '\033[94m'
-CYAN = '\033[96m'
-YELLOW = '\033[93m'
+# TODO: add playlist download
+# TODO: check progressbar
 
-# required=True
+
+def home_path_creator():
+    user_download_path = Path.home() / "Downloads" / "YTD"
+    Path.mkdir(user_download_path, parents=True, exist_ok=True)
+    return user_download_path
+
 
 parser = argparse.ArgumentParser(prog='python YTD.py ', epilog='Download : python YTD.py -u <url> -d [360, 480, 720]'
                                                                ' -p empty or /path/to/dist\nVideo details : python '
                                                                'YTD.py -u <url> -v', add_help=False)
-parser.add_argument('-u', '--url', help='enter youtube video url', )
-parser.add_argument('-d', '--download', choices=['360', '480', '720'], help='downloading the video with the given quaity')
+parser.add_argument('-u', '--url', help='Enter youtube video url[Required]', required=True)
+parser.add_argument('-d', '--download', choices=['360p', '480p', '720p'], help='downloading the video with the given quality')
 parser.add_argument('-v', '--verbose', help='give you information about video', action='store_true')
-parser.add_argument('-p', '--path', nargs='*',
-                    help='path to download the video( leave empty to download to defualt path ~/Downloads/YTD )')
+parser.add_argument('-p', '--path', default=home_path_creator(),
+                    help='path to download the video( leave empty to download to default path ~/Downloads/YTD )')
 parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS, help='Show this help message and exit.')
 args = parser.parse_args()
 
-dl = os.path.expanduser('~/Downloads')
-try:
-    os.mkdir('YTD')
-except FileExistsError:
-    ytd_path = os.path.join(dl, 'YTD')
+
+def download_path_validator(path):
+    download_path = Path(path)
+    if not download_path.is_dir():
+        print(f"No such directory: '{path}'")
+        exit()
 
 
-def main_menu():
-    # print(args.path)
-    if args.url is not None:
-        url_input = args.url
-        global youtube_connect
-        youtube_connect = YouTube(url_input)
+def main():
+    youtube_connect = YouTube(args.url, on_progress_callback=on_progress)
 
-    if not len(sys.argv) > 1:
-        parser.print_help()
-
-    if args.download is not None and args.path is None and args.path is None:
-        parser.error('[ -d | --download ] require [ -p | --path ] put it empty to download to default path')
-
-    if args.verbose and args.url is None:
-        parser.error('[ -v | --verbose ] require the video url add [ -u | --url ] <url>')
-    # if args.download is None:
-    # details()
     if args.verbose:
-        details()
-    if args.url is not None and args.download is None:
-        details()
+        details(connection=youtube_connect)
 
-    elif args.url is not None and args.download is not None:
-        if args.download == '360':
-            path = args.path
-            stream_360 = youtube_connect.streams.filter(res='360p').first()
-            if path is None or not [] or not '':
-                path = ytd_path
-            stream_360.download(path)
-            notify()
-        elif args.download == '480':
-            stream_480 = youtube_connect.streams.filter(res='480p').first()
-            path = args.path
-            if path == '' or None:
-                path = ytd_path
-            else:
-                path = path
-            stream_480.download(path)
-            notify()
-        elif args.download == '720':
-            stream_720 = youtube_connect.streams.filter(res='720p').first()
-            path = args.path
-            if path == '' or None:
-                path = ytd_path
-            else:
-                path = path
-            stream_720.download(path)
-            notify()
+    if args.download is None:
+        details(connection=youtube_connect)
+    else:
+        download_path_validator(args.path)
+        video_path = download(connection=youtube_connect, resolution=args.download, path_to_save=args.path)
+        print(f"{youtube_connect.title} saved to {video_path}")
+
+
+def download(connection: YouTube, resolution: str, path_to_save: str):
+    print(f"Downloading '{connection.title}' ...")
+    video = connection.streams.filter(res=resolution, file_extension="mp4").first()
+    video.download(path_to_save)
+    print("Finished!")
+    notify()
+    return path_to_save
 
 
 def notify():
@@ -93,17 +69,15 @@ def notify():
                          icon_path='favicon.ico')
 
 
-def details():
-    vid_title = youtube_connect.title
-    vid_author = youtube_connect.author
-    vid_description = youtube_connect.description
-    vid_rate = youtube_connect.rating
-    vid_views = youtube_connect.views
-    vid_photo = youtube_connect.thumbnail_url
-    vid_caption = youtube_connect.captions
-    if vid_caption == '' or vid_caption is None or vid_caption == {}:
-        vid_caption = "video has no caption"
-    vid_length = youtube_connect.length
+def details(connection):
+    vid_title = connection.title
+    vid_author = connection.author
+    vid_description = connection.description
+    vid_rate = connection.rating
+    vid_views = connection.views
+    vid_photo = connection.thumbnail_url
+    vid_caption = connection.captions
+    vid_length = connection.length
     if vid_length >= 60:
         vid_length //= 60
         vid_length = str(vid_length) + " 'M"
@@ -119,4 +93,4 @@ def details():
 
 
 if __name__ == "__main__":
-    main_menu()
+    main()
