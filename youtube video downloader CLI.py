@@ -5,7 +5,12 @@ from pathlib import Path
 from pynotifier import Notification
 from pytube import YouTube
 from pytube.cli import on_progress
+import pytube
+import pytube.request
 from win10toast import ToastNotifier
+
+# chunk size
+pytube.request.default_range_size = 1048576 # 1MB
 
 # TODO: add playlist download
 # TODO: check progressbar
@@ -47,11 +52,11 @@ def main():
     else:
         download_path_validator(args.path)
         video_path = download(connection=youtube_connect, resolution=args.download, path_to_save=args.path)
-        print(f"{youtube_connect.title} saved to {video_path}")
+        print(f"'{youtube_connect.title}' saved to '{video_path}'")
 
 
 def download(connection: YouTube, resolution: str, path_to_save: str):
-    print(f"Downloading '{connection.title}' ...")
+    print(f"\nDownloading '{connection.title}' ...")
     video = connection.streams.filter(res=resolution, file_extension="mp4").first()
     video.download(path_to_save)
     print("Finished!")
@@ -69,14 +74,14 @@ def notify():
                          icon_path='favicon.ico')
 
 
-def details(connection):
+def details(connection:YouTube):
     vid_title = connection.title
     vid_author = connection.author
     vid_description = connection.description
     vid_rate = connection.rating
     vid_views = connection.views
     vid_photo = connection.thumbnail_url
-    vid_caption = connection.captions
+    vid_caption = connection.captions.get_by_language_code("en")
     vid_length = connection.length
     if vid_length >= 60:
         vid_length //= 60
@@ -84,11 +89,11 @@ def details(connection):
     elif vid_length < 60:
         vid_length = str(vid_length) + " 'S"
     all_details = "\n\nVideo Title: {0}\nVideo Author: {1}\nVideo Description: {2}\nVideo Rate: {3}\nVideo Views:" \
-                  " {4}\nVideo Thumbnail Url: {5}\nVideo Caption: {6}\nVideo Length: {7}".format(vid_title, vid_author,
+                  " {4}\nVideo Thumbnail Url: {5}\nVideo Caption: {6}\nVideo Length: {7}\n".format(vid_title, vid_author,
                                                                                                  vid_description,
                                                                                                  vid_rate, vid_views,
                                                                                                  vid_photo, vid_caption,
-                                                                                                 vid_length)
+                                                                                                 vid_length) + "-"*50
     print(all_details)
 
 
