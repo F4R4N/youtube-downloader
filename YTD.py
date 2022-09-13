@@ -12,7 +12,6 @@ from win10toast import ToastNotifier
 # chunk size
 pytube.request.default_range_size = 1048576  # 1MB
 
-# TODO: playlist detail
 # TODO: test
 
 USER_DOWNLOAD_PATH = Path.home() / "Downloads" / "YTD"
@@ -56,16 +55,18 @@ def notify(title: str):
 
 def video_details(connection: YouTube):
     vid_length = str(timedelta(seconds=connection.length))
+    details = LINE + f"\nVideo Title: {connection.title}\nVideo Author: {connection.author}\n" \
+            f"Video Description: {connection.description}\nVideo Rate: {connection.rating}"\
+            f"\nVideo Views: {connection.views}\nVideo Thumbnail Url: {connection.thumbnail_url}"\
+            f"\nVideo Length: {vid_length}\n"+ LINE
+    print(details)
 
-    all_details = LINE + f"\nVideo Title: {connection.title}\nVideo Author: {connection.author}\n" \
-                         f"Video Description: {connection.description}\nVideo Rate: {connection.rating}"\
-                         f"\nVideo Views: {connection.views}\nVideo Thumbnail Url: {connection.thumbnail_url}"\
-                         f"\nVideo Length: {vid_length}\n"+ LINE
-    print(all_details)
 
-
-def playlist_details(connection):
-    print("\nPLAYLIST DETAIL")
+def playlist_details(connection: Playlist):
+    details = LINE + f"\nPlaylist Title: {connection.title}\nPlaylist Owner: {connection.owner}\n"\
+            f"Playlist Description: {connection.description}\nPlaylist Views: {connection.views}\n"\
+            f"Playlist has {connection.length} video(s) in it!"
+    print(details)
 
 
 def verbose_without_download(connection):
